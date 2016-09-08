@@ -1,11 +1,11 @@
 /**
  *
  *  \file
- *  \brief Node which receives a latlon datum and ENU Odometry messages, and
-           outputs a NavSatFix.
- *  \author Mike Purvis <mpurvis@clearpathrobotics.com>
- *  \author Ryan Gariepy <rgariepy@clearpathrobotics.com>
+ *  \brief Node which receives ENU Odometry messages under "odom" topic,
+ *         and outputs a NavSatFix to "novatel/gps_fix" topic.
  *
+ *
+ *  Modified from:
  *  \copyright Copyright (c) 2013, Clearpath Robotics, Inc. 
  *  All Rights Reserved
  * 
@@ -70,8 +70,8 @@ static void handle_datum(const sensor_msgs::NavSatFixConstPtr datum_ptr,
   // Pass datum into the data subscriber. Subscriber, Publisher, and the datum
   // array are static, so that they stick around when this function has exited.
   static sensor_msgs::NavSatFix datum(*datum_ptr);
-  static ros::Publisher pub_fix = n.advertise<sensor_msgs::NavSatFix>("fix", 5);
-  static ros::Subscriber sub_enu = n.subscribe<nav_msgs::Odometry>("enu", 5,
+  static ros::Publisher pub_fix = n.advertise<sensor_msgs::NavSatFix>("novatel/gps_fix", 5);
+  static ros::Subscriber sub_enu = n.subscribe<nav_msgs::Odometry>("odom", 5,
       boost::bind(handle_enu, _1, datum, boost::ref(pub_fix)));
 }
 
@@ -79,10 +79,9 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "to_fix");
   ros::NodeHandle n;
 
-  // Initially just subscribe to the datum topic. Once we receive that, we'll
-  // spin up the rest of the node's activities.
-  ros::Subscriber sub_datum = n.subscribe<sensor_msgs::NavSatFix>("enu_datum", 5,
-      boost::bind(handle_datum, _1, boost::ref(n)));
+  // Use constant zero datum to start the node's activities
+  sensor_msgs::NavSatFixConstPtr datum_ptr(new sensor_msgs::NavSatFix);
+  handle_datum(datum_ptr, boost::ref(n));
 
   ros::spin();
   return 0;
